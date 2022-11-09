@@ -51,18 +51,12 @@ void calculate_error()
     int all_black_flag = 1; // assuming initially all black condition
     float weighted_sum = 0, sum = 0; 
     float pos = 0;
-    int left_turn_flag = 1;
-    if( (line_sensor_readings.adc_reading[0] > BLACK_MARGIN)){
-        left_turn_flag = 0;
-    }
-    if(left_turn_flag = 0 ){
-        if(line_sensor_readings.adc_reading[0] < BLACK_MARGIN){
-            weights[0] = 5;
-        }
-        else{
-            weights[0] = 3;
-            left_turn_flag = 1;
-        }
+    
+    if(line_sensor_readings.adc_reading[0] >= 1000){
+            set_motor_speed(MOTOR_A_0, MOTOR_STOP, 100);
+            set_motor_speed(MOTOR_A_1, MOTOR_STOP, 100);
+            printf("%s" , "Turn leloya !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") ;
+        
     }
     
 
