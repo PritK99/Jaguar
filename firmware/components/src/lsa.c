@@ -22,17 +22,17 @@ int get_raw_lsa() // gets raw readings in range of 400 - 2000 appx
     lsa_reading[3] =  adc1_get_raw(ADC1_CHANNEL_3);
 
     /*reducing all the value in terms of BLACK and WHITE*/
-    for (int i = 0; i < no_of_sensors; i++)
-    {
-        if (lsa_reading[i] > 1000)
-        {
-            lsa_reading[i] = WHITE_PATCH;
-        }
-        else
-        {
-            lsa_reading[i] = BLACK_PATCH;
-        }
-    }
+    // for (int i = 0; i < no_of_sensors; i++)
+    // {
+    //     if (lsa_reading[i] > 1000)
+    //     {
+    //         lsa_reading[i] = WHITE_PATCH;
+    //     }
+    //     else
+    //     {
+    //         lsa_reading[i] = BLACK_PATCH;
+    //     }
+    // }
 
     /*testing lsa*/
     for (int i = 0; i < no_of_sensors; i++)

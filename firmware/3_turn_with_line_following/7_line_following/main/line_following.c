@@ -18,9 +18,9 @@ int weights[4] = {3,1,-1,-3};
 /*
  * Motor value boundts
  */
-int optimum_duty_cycle = 50;
-int lower_duty_cycle = 40;
-int higher_duty_cycle = 60;
+int optimum_duty_cycle = 49;
+int lower_duty_cycle = 39;
+int higher_duty_cycle = 59;
 float left_duty_cycle = 0, right_duty_cycle = 0;
 
 /*
@@ -91,27 +91,86 @@ void line_follow_task(void* arg)
 {
     ESP_ERROR_CHECK(enable_motor_driver(a, NORMAL_MODE));
     ESP_ERROR_CHECK(enable_line_sensor());
-    
+    int right = 0;
+    int left = 0;
     while(true)
     {
+        printf("stage1\n") ;
+
         line_sensor_readings = read_line_sensor();
-        
+        printf("Hi") ;
         calculate_error();
         calculate_correction();
         
+        printf("stage3\n") ;
         left_duty_cycle = bound((optimum_duty_cycle - correction), lower_duty_cycle, higher_duty_cycle);
         right_duty_cycle = bound((optimum_duty_cycle + correction), lower_duty_cycle, higher_duty_cycle);
-
-        if(line_sensor_readings.adc_reading[0] >= 2000 &&  line_sensor_readings.adc_reading[1] >= 2000 && line_sensor_readings.adc_reading[2] >= 2000 && line_sensor_readings.adc_reading[3] >= 2000)
+        
+        if(line_sensor_readings.adc_reading[0] > 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] > 2000 )
         {
-           
-            set_motor_speed(MOTOR_A_1, MOTOR_STOP, right_duty_cycle);
-            vTaskDelay(20 / portTICK_PERIOD_MS);
-      
+            // printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
+            // printf("All white /Node");
+            // set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle);
+            // set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
+            left = 1;
         }
-        set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
-        set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
-
+        else if(line_sensor_readings.adc_reading[0] < 2000 &&  line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] < 2000 && line_sensor_readings.adc_reading[3] < 2000)
+        {
+            if(right == 1){
+                printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
+                printf("Right U-Turn");
+                set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
+                set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle);
+                if(line_sensor_readings.adc_reading[0] < 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] < 2000){
+                    right = 0;
+                }
+            }
+            else{
+                printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
+                printf("Left U-Turn");
+                set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle);
+                set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
+            }
+        }
+        else if(line_sensor_readings.adc_reading[0] < 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] > 2000)
+        {
+            right = 1;
+            left = 0;
+        }
+        else if(line_sensor_readings.adc_reading[0] > 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] < 2000)
+        {
+            left = 1;
+            right = 0;
+        }
+        else if(right == 1){
+            printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
+            printf("Right");
+            set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
+            set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle);
+            if(line_sensor_readings.adc_reading[3] < 2000 ){
+                right = 0;
+                left = 0;
+            }
+        }
+        else if(left == 1){
+            printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
+            printf("Left");
+            set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle);
+            set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
+            if(line_sensor_readings.adc_reading[0] < 2000 && line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 ){
+                right = 0;
+                left = 0;
+            }
+        }
+        else
+        {
+            printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
+            printf("straight");
+            left = 0;
+            right = 0;
+            set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
+            set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
+        }
         
         //ESP_LOGI("debug","left_duty_cycle:  %f    ::  right_duty_cycle :  %f  :: error :  %f  correction  :  %f  \n",left_duty_cycle, right_duty_cycle, error, correction);
         ESP_LOGI("debug", "KP: %f ::  KI: %f  :: KD: %f", read_pid_const().kp, read_pid_const().ki, read_pid_const().kd);
@@ -123,7 +182,9 @@ void line_follow_task(void* arg)
 }
 
 void app_main()
-{
+{  
+    printf("stage0\n") ;
+
     xTaskCreate(&line_follow_task, "line_follow_task", 4096, NULL, 1, NULL);
     start_tuning_http_server();
 }

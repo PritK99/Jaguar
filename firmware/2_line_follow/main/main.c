@@ -1,19 +1,19 @@
-#include "jaguar.h" 
+#include "jaguar.h"
 
 /*This method involves tuning kp , ki ,kd physically*/
-#define GOOD_DUTY_CYCLE 55
-#define MIN_DUTY_CYCLE 45
-#define MAX_DUTY_CYCLE 65
+#define GOOD_DUTY_CYCLE 40
+#define MIN_DUTY_CYCLE 30
+#define MAX_DUTY_CYCLE 50
 
-int actiavate_left_counter =0;
-int actiavate_right_counter =0;
-int Turn ;
-float error=0, prev_error=0, difference, cumulative_error, correction; 
+int actiavate_left_counter = 0;
+int actiavate_right_counter = 0;
+int Turn;
+float error = 0, prev_error = 0, difference, cumulative_error, correction;
 float left_duty_cycle = 0, right_duty_cycle = 0;
 
 void calculate_correction();
-void calculate_error() ;
-float bound(float val, float min, float max) ; 
+void calculate_error();
+float bound(float val, float min, float max);
 
 void line_follow_task(void *arg)
 {
@@ -57,39 +57,32 @@ void calculate_error()
     error to right of line is +ve while left of line is -ve
     */
 
-    int error[4] = {-4 , -2 , +2 , +4}
-    if (lsa_reading[0] == 0 && lsa_reading[1] == 0 && lsa_reading[2] == 0 && lsa_reading[3] == 0 )
-    {
-        error = (error[0]*lsa_reading[0] + error[1]*lsa_reading[1] + error[2]*lsa_reading[2] + error[3]*lsa_reading[3]) / (lsa_reading[0] + lsa_reading[1] + lsa_reading[2] + lsa_reading[3]);
+    int error_arr[4] = {-4, -1, +1, +4};
 
+    error = (error_arr[0] * lsa_reading[0] + error_arr[1] * lsa_reading[1] + error_arr[2] * lsa_reading[2] + error_arr[3] * lsa_reading[3]) / (lsa_reading[0] + lsa_reading[1] + lsa_reading[2] + lsa_reading[3]);
+
+    if (lsa_reading[0] == 0 && lsa_reading[1] == 0 && lsa_reading[2] == 0 && lsa_reading[3] == 0)
+    {
+        set_motor_speed(MOTOR_A_0, MOTOR_STOP, 100);
+        set_motor_speed(MOTOR_A_1, MOTOR_STOP, 100);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
         /*All sensors read black*/
-        if (prev_error > 0) // we use prev_error to extract the sign to give to error
-        {
-            error = 2.5; //chnage
-        }
-        else
-        {
-            error = -2.5;//change
-        }
+        // if (prev_error > 0) // we use prev_error to extract the sign to give to error
+        // {
+        //     error = 2.5; // chnage
+        // }
+        // else
+        // {
+        //     error = -2.5; // change
+        // }
     }
-    else if (lsa_reading[1] == 0 && lsa_reading[2] == 1000 )
+
+    if (lsa_reading[0] == 1000 && lsa_reading[1] == 1000 && lsa_reading[2] == 1000)
     {
-        /* turn right to nullify */
-        error = 1; // arbitrary value
-    }
-    else if ( lsa_reading[1] == 1000 && lsa_reading[2] == 0)
-    {
-        /* turn left to nullify */
-        error = -1; 
-    }
-    else if (lsa_reading[1] == 1000 && lsa_reading[2] == 1000 )
-    {
-        /* no error since the bot is on line */
-        error = 0; // arbitrary value
-    }
-    else
-    {
-        error = 0; // this case is for safety
+        set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, 70);
+        set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, 70);
+
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 // end of function
@@ -102,18 +95,18 @@ void calculate_correction()
 
     cumulative_error = bound(cumulative_error, -30, 30); // bounding cumulative_error to avoid the issue of cumulative_error being very large
 
-    float kp , ki , kd ;
-    kp = 5 ;
-    kd = 2 ;
-    ki = 0 ; 
+    float kp, ki, kd;
+    kp = 5;
+    kd = 2;
+    ki = 0;
 
-    correction = kp* error + ki * cumulative_error + kd * difference; // defined in http_server.c
+    correction = kp * error + ki * cumulative_error + kd * difference; // defined in http_server.c
 
     prev_error = error; // update error
 }
 // end of function
 
-float bound(float val, float min, float max) //To bound a certain value in range MAX to MIN 
+float bound(float val, float min, float max) // To bound a certain value in range MAX to MIN
 {
     if (val > max)
         val = max;
@@ -121,5 +114,4 @@ float bound(float val, float min, float max) //To bound a certain value in range
         val = min;
     return val;
 }
-//end of function
-
+// end of function
