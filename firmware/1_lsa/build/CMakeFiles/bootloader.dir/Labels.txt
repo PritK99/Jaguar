@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/CMakeFiles/bootloader
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/CMakeFiles/bootloader.rule
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/CMakeFiles/bootloader-complete.rule
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+/home/prit/Desktop/Jaguar/firmware/1_lsa/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
