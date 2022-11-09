@@ -52,12 +52,7 @@ void calculate_error()
     float weighted_sum = 0, sum = 0; 
     float pos = 0;
     
-    if(line_sensor_readings.adc_reading[0] >= 1000){
-            set_motor_speed(MOTOR_A_0, MOTOR_STOP, 100);
-            set_motor_speed(MOTOR_A_1, MOTOR_STOP, 100);
-            printf("%s" , "Turn leloya !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") ;
-        
-    }
+    
     
 
     for(int i = 0; i < 4; i++)
@@ -107,6 +102,13 @@ void line_follow_task(void* arg)
         left_duty_cycle = bound((optimum_duty_cycle - correction), lower_duty_cycle, higher_duty_cycle);
         right_duty_cycle = bound((optimum_duty_cycle + correction), lower_duty_cycle, higher_duty_cycle);
 
+        if(line_sensor_readings.adc_reading[0] >= 2000 &&  line_sensor_readings.adc_reading[1] >= 2000 && line_sensor_readings.adc_reading[2] >= 2000 && line_sensor_readings.adc_reading[3] >= 2000)
+        {
+           
+            set_motor_speed(MOTOR_A_1, MOTOR_STOP, right_duty_cycle);
+            vTaskDelay(20 / portTICK_PERIOD_MS);
+      
+        }
         set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
         set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
 
