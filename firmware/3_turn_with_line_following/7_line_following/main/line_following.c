@@ -55,12 +55,16 @@ void calculate_error()
     if( (line_sensor_readings.adc_reading[0] > BLACK_MARGIN)){
         left_turn_flag = 0;
     }
-    if(left_turn_flag = 0 && line_sensor_readings.adc_reading[0] < BLACK_MARGIN){
-        weights[0] = 10;
+    if(left_turn_flag = 0 ){
+        if(line_sensor_readings.adc_reading[0] < BLACK_MARGIN){
+            weights[0] = 5;
+        }
+        else{
+            weights[0] = 3;
+            left_turn_flag = 1;
+        }
     }
-    if(left_turn_flag = 0 && line_sensor_readings.adc_reading[0] > BLACK_MARGIN){
-        left_turn_flag = 1;
-    }
+    
 
     for(int i = 0; i < 4; i++)
     {
