@@ -87,12 +87,16 @@ void calculate_error()
     }
 }
 
+
 void line_follow_task(void* arg)
 {
     ESP_ERROR_CHECK(enable_motor_driver(a, NORMAL_MODE));
     ESP_ERROR_CHECK(enable_line_sensor());
-    int right = 0;
+    int node = 0;
     int left = 0;
+    int right = 0;
+    int black = 0;
+    int prev_turn = 0;
     while(true)
     {
         
@@ -104,73 +108,67 @@ void line_follow_task(void* arg)
         
         left_duty_cycle = bound((optimum_duty_cycle - correction), lower_duty_cycle, higher_duty_cycle);
         right_duty_cycle = bound((optimum_duty_cycle + correction), lower_duty_cycle, higher_duty_cycle);
+
         
-        if(line_sensor_readings.adc_reading[0] > 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] > 2000 )
-        {
-            // printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
-            // printf("All white /Node");
-            // set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle);
-            // set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
-            left = 1;
-        }
-        else if(line_sensor_readings.adc_reading[0] < 2000 &&  line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] < 2000 && line_sensor_readings.adc_reading[3] < 2000)
-        {
-            if(right == 1){
-                printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
-                printf("Right U-Turn");
-                set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
-                set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle);
-                if(line_sensor_readings.adc_reading[0] < 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] < 2000){
-                    right = 0;
-                }
-            }
-            else{
-                printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
-                printf("Left U-Turn");
-                set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle);
-                set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
-            }
-        }
-        else if(line_sensor_readings.adc_reading[0] < 2000 &&  line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] > 2000)
-        {
-            right = 1;
+
+        
+        if(line_sensor_readings.adc_reading[0] > 2000  &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000  &&  line_sensor_readings.adc_reading[3] > 2000 ){
+            node = 1;
             left = 0;
+            right = 0;
+            black = 0;
         }
-        else if(line_sensor_readings.adc_reading[0] > 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] < 2000)
-        {
+        else if(line_sensor_readings.adc_reading[0] > 2000  &&   line_sensor_readings.adc_reading[3] < 2000 ){
+            node = 0;
             left = 1;
             right = 0;
+            black = 0;
+            prev_turn = -1;
         }
-        else if(right == 1){
-            printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
-            printf("Right");
-            set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
-            set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle);
-            if(line_sensor_readings.adc_reading[3] < 2000 ){
-                right = 0;
-                left = 0;
-            }
+        else if(line_sensor_readings.adc_reading[0] < 2000  &&  line_sensor_readings.adc_reading[3] > 2000  ){
+            node = 0;
+            left = 0;
+            right = 1;
+            black = 0;
+            prev_turn = 1;
         }
-        else if(left == 1){
-            printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
-            printf("Left");
+        else if(line_sensor_readings.adc_reading[0] < 2000  &&  line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] < 2000  &&  line_sensor_readings.adc_reading[3] < 2000){
+            node = 0;
+            left = 0;
+            right = 0;
+            black = 1;
+        }
+        else{
+            node = 0;
+            left = 0;
+            right = 0;
+            black = 0;
+        }
+        if(node == 1){
+            printf("Node + Left");
             set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle * 1.5);
             set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle * 1.5);
-            if(line_sensor_readings.adc_reading[0] > 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] < 2000 && line_sensor_readings.adc_reading[33] < 2000 ){
-                right = 0;
-                left = 0;
-            }
         }
-        else
-        {
-            printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
-            printf("straight");
-            left = 0;
-            right = 0;
+        else if(left == 1){
+            printf("Left");
+            set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle );
+            set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle );
+        }
+        else if(right == 1){
+            printf("Right");
+            set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle );
+            set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle);
+        }
+        else if(black == 1){
+            printf("Black");
+            set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
+            set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle);
+        }
+        else{
+            printf("Straight");
             set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
             set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
         }
-        
         //ESP_LOGI("debug","left_duty_cycle:  %f    ::  right_duty_cycle :  %f  :: error :  %f  correction  :  %f  \n",left_duty_cycle, right_duty_cycle, error, correction);
         ESP_LOGI("debug", "KP: %f ::  KI: %f  :: KD: %f", read_pid_const().kp, read_pid_const().ki, read_pid_const().kd);
 
