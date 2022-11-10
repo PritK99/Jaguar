@@ -95,14 +95,13 @@ void line_follow_task(void* arg)
     int left = 0;
     while(true)
     {
-        printf("stage1\n") ;
+        
 
         line_sensor_readings = read_line_sensor();
-        printf("Hi") ;
         calculate_error();
         calculate_correction();
         
-        printf("stage3\n") ;
+        
         left_duty_cycle = bound((optimum_duty_cycle - correction), lower_duty_cycle, higher_duty_cycle);
         right_duty_cycle = bound((optimum_duty_cycle + correction), lower_duty_cycle, higher_duty_cycle);
         
@@ -132,7 +131,7 @@ void line_follow_task(void* arg)
                 set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
             }
         }
-        else if(line_sensor_readings.adc_reading[0] < 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] > 2000)
+        else if(line_sensor_readings.adc_reading[0] < 2000 &&  line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] > 2000 && line_sensor_readings.adc_reading[3] > 2000)
         {
             right = 1;
             left = 0;
@@ -155,9 +154,9 @@ void line_follow_task(void* arg)
         else if(left == 1){
             printf("%f %f %f %f", (float)line_sensor_readings.adc_reading[0],(float)line_sensor_readings.adc_reading[1],(float)line_sensor_readings.adc_reading[2],(float)line_sensor_readings.adc_reading[3]) ;
             printf("Left");
-            set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle);
-            set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
-            if(line_sensor_readings.adc_reading[0] < 2000 && line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] > 2000 ){
+            set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle * 1.5);
+            set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle * 1.5);
+            if(line_sensor_readings.adc_reading[0] > 2000 &&  line_sensor_readings.adc_reading[1] > 2000 && line_sensor_readings.adc_reading[2] < 2000 && line_sensor_readings.adc_reading[33] < 2000 ){
                 right = 0;
                 left = 0;
             }
@@ -183,7 +182,7 @@ void line_follow_task(void* arg)
 
 void app_main()
 {  
-    printf("stage0\n") ;
+    
 
     xTaskCreate(&line_follow_task, "line_follow_task", 4096, NULL, 1, NULL);
     start_tuning_http_server();
