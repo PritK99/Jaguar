@@ -97,9 +97,13 @@ void line_follow_task(void* arg)
     int right = 0;
     int black = 0;
     int prev_turn = 0;
+    int inversion = 0;
     while(true)
     {
-        
+        weights[0] = 3;
+        weights[1] = 1;
+        weights[2] = -1;
+        weights[3] = -3;
 
         line_sensor_readings = read_line_sensor();
         calculate_error();
@@ -117,6 +121,7 @@ void line_follow_task(void* arg)
             left = 0;
             right = 0;
             black = 0;
+            inversion = 0;
         }
         else if(line_sensor_readings.adc_reading[0] > 2000  &&   line_sensor_readings.adc_reading[3] < 2000 ){
             node = 0;
@@ -124,6 +129,7 @@ void line_follow_task(void* arg)
             right = 0;
             black = 0;
             prev_turn = -1;
+            inversion = 0;
         }
         else if(line_sensor_readings.adc_reading[0] < 2000  &&  line_sensor_readings.adc_reading[3] > 2000  ){
             node = 0;
@@ -131,30 +137,50 @@ void line_follow_task(void* arg)
             right = 1;
             black = 0;
             prev_turn = 1;
+            inversion = 0;
         }
         else if(line_sensor_readings.adc_reading[0] < 2000  &&  line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] < 2000  &&  line_sensor_readings.adc_reading[3] < 2000){
             node = 0;
             left = 0;
             right = 0;
             black = 1;
+            inversion = 0;
+        }
+        else if(line_sensor_readings.adc_reading[0] > 2000  &&  line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] < 2000  &&  line_sensor_readings.adc_reading[3] > 2000){
+            node = 0;
+            left = 0;
+            right = 0;
+            black = 0;
+            inversion = 1;
+            
         }
         else{
             node = 0;
             left = 0;
             right = 0;
             black = 0;
+            inversion = 0;
         }
-        if(node == 1){
+        if(inversion == 1){
+            printf("Blind");
+            set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, right_duty_cycle);
+            set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, left_duty_cycle);
+        }
+        
+        else if(node == 1){
+            
             printf("Node + Left");
             set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle * 1.5);
             set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle * 1.5);
         }
         else if(left == 1){
+            
             printf("Left");
             set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle );
             set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle );
         }
         else if(right == 1){
+            
             printf("Right");
             set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle );
             set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle);
