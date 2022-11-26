@@ -10,6 +10,8 @@
 #define bound_LSA_LOW 0
 #define bound_LSA_HIGH 1000
 
+#define IR GPIO_NUM_19
+
 /*
  * weights given to respective line sensor
  */
@@ -18,9 +20,9 @@ int weights[4] = {3, 1, -1, -3};
 /*
  * Motor value boundts
  */
-int optimum_duty_cycle = 53;
-int lower_duty_cycle = 43;
-int higher_duty_cycle = 63;
+int optimum_duty_cycle = 56;
+int lower_duty_cycle = 46;
+int higher_duty_cycle = 66;
 float left_duty_cycle = 0, right_duty_cycle = 0;
 
 /*
@@ -32,6 +34,8 @@ float error = 0, prev_error = 0, difference, cumulative_error, correction;
  * Union containing line sensor readings
  */
 line_sensor_array line_sensor_readings;
+
+int all_white_count ;
 
 void calculate_correction()
 {
@@ -92,14 +96,44 @@ void line_follow_task(void *arg)
     int right = 0;
     int black = 0;
     int prev_turn = 0;
+    int obstacle = 0;
     while (true)
     {
         line_sensor_readings = read_line_sensor();
-        if(line_sensor_readings.adc_reading[0] > 2000 && line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] < 2000 && line_sensor_readings.adc_reading[3] > 2000){
-            weights[0] = -1;
-            weights[1] = -3;
-            weights[2] = 3;
-            weights[3] = 1;
+        int ir = gpio_get_level(IR);
+        printf("detect kiya %d", ir);
+        
+        if(ir == 0 && obstacle==0){//obstacle detected
+            weights[0] = 3;
+            weights[1] = 1;
+            weights[2] = -1;
+            weights[3] = -3;
+            line_sensor_readings = read_line_sensor();
+            
+            calculate_error();
+            calculate_correction();
+            
+            left_duty_cycle = bound((optimum_duty_cycle - correction), lower_duty_cycle, higher_duty_cycle);
+            right_duty_cycle = bound((optimum_duty_cycle + correction), lower_duty_cycle, higher_duty_cycle);
+
+            
+            if(line_sensor_readings.adc_reading[0] < 2000 && line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] < 2000 && line_sensor_readings.adc_reading[3] < 2000){
+                set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
+                set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle);
+                obstacle = 1;
+            }
+            else{
+                set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle*1.15);
+                set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle*1.15);
+            }
+        }
+
+
+        else if(line_sensor_readings.adc_reading[0] > 2000 && line_sensor_readings.adc_reading[1] < 2000 && line_sensor_readings.adc_reading[2] < 2000 && line_sensor_readings.adc_reading[3] > 2000){
+            weights[0] = -2;
+            weights[1] = -5;
+            weights[2] = 5;
+            weights[3] = 2;
             line_sensor_readings = read_line_sensor();
             for(int i = 0; i < 4; i++)
             {
@@ -115,8 +149,6 @@ void line_follow_task(void *arg)
 
             set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
             set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
-
-            
            
         }
         else
@@ -139,6 +171,7 @@ void line_follow_task(void *arg)
                 right = 0;
                 black = 0;
                 prev_turn = 0;
+                all_white_count ++ ;
             }
             else if (line_sensor_readings.adc_reading[0] > 2000 && line_sensor_readings.adc_reading[3] < 2000)
             {
@@ -162,7 +195,6 @@ void line_follow_task(void *arg)
                 left = 0;
                 right = 0;
                 black = 1;
-                prev_turn = 0;
             }
             else if (line_sensor_readings.adc_reading[2] > 2000 || line_sensor_readings.adc_reading[3] > 2000)
             {
@@ -171,6 +203,7 @@ void line_follow_task(void *arg)
                 right = 0;
                 black = 0;
                 prev_turn = 0;
+                all_white_count = 0 ;
             }
             // else
             // {
@@ -180,11 +213,18 @@ void line_follow_task(void *arg)
             //     black = 0;
             //     prev_turn = 0;
             // }
-            if (node == 1)
+            if (node == 1 && all_white_count > 7)
             {
+                printf("Dead end");
+                set_motor_speed(MOTOR_A_0, MOTOR_STOP, 100);
+                set_motor_speed(MOTOR_A_1, MOTOR_STOP, 100);
+            }
+            else if (node == 1)
+            {
+                //this is the all white condition 
                 printf("Node + Left");
-                set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle * 2);
-                set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle * 2);
+                set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle * 1.75);
+                set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle * 1.75);
             }
             else if (left == 1)
             {
@@ -201,19 +241,20 @@ void line_follow_task(void *arg)
             else if (black == 1)
             {
                 printf("Black");
-                if (prev_turn)
+                if (prev_turn == 1)
                 {
-                    set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle * 1.1);
-                    set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle * 1.1);
+                    set_motor_speed(MOTOR_A_0, MOTOR_BACKWARD, left_duty_cycle );
+                    set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle );
                 }
                 else
                 {
-                    set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle * 1.1);
-                    set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle * 1.1);
+                    set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle );
+                    set_motor_speed(MOTOR_A_1, MOTOR_BACKWARD, right_duty_cycle);
                 }
             }
             else
             {
+                obstacle = 0;
                 printf("Straight");
                 set_motor_speed(MOTOR_A_0, MOTOR_FORWARD, left_duty_cycle);
                 set_motor_speed(MOTOR_A_1, MOTOR_FORWARD, right_duty_cycle);
